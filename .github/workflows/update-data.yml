@@ -1,0 +1,32 @@
+name: Update SyGold Data
+
+on:
+  schedule:
+    # 01:00 UTC = 08:00 WIB, tiap hari
+    - cron: '0 1 * * *'
+  workflow_dispatch: {}   # tombol "Run workflow" manual di tab Actions
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pandas numpy requests yfinance ta lxml html5lib xlrd
+
+      - name: Jalankan scraper
+        run: python scraper/update_data.py
+
+      - name: Commit & push kalau ada perubahan
+        run: |
+          git config user.name "sygold-bot"
+          git config user.email "actions@github.com"
+          git add master_dataset_featured.csv
+          git diff --cached --quiet || git commit -m "Auto-update data harga emas ($(date -u +'%Y-%m-%d'))"
+          git push

@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>SyGold | Gold Price Forecast</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"/>
+
+<link rel="stylesheet"
+href="{{ url_for('static', filename='css/style.css') }}">
+
+<meta name="theme-color" content="#0f1115">
+</head>
+<body>
+
+<canvas id="bgParticles"></canvas>
+
+ <nav class="navbar">
+
+    <div class="logo">
+
+        <div class="logo-icon">
+            <i class="fa-solid fa-coins"></i>
+        </div>
+
+        <div class="logo-text">
+            <span>Sy</span>Gold
+        </div>
+
+    </div>
+
+    <div class="nav-right">
+
+        <button id="themeToggle">
+
+            <i class="fa-solid fa-moon"></i>
+
+        </button>
+
+        <div class="status-pill">
+
+            <span class="dot"></span>
+
+            Update {{ last_update_label }}
+
+        </div>
+
+    </div>
+</nav>
+
+<main>
+
+  <!-- HERO: prediksi H+1 sebagai thesis utama halaman -->
+<section class="hero">
+
+<div class="hero-left">
+
+<div class="tag">
+
+<i class="fa-solid fa-bolt"></i>
+
+LSTM Multivariate
+
+</div>
+
+<h1>
+
+Prediksi Harga
+
+<span>Emas Antam</span>
+
+</h1>
+
+<p>
+
+Prediksi harga emas Antam menggunakan model Deep Learning
+Long Short-Term Memory (LSTM) dengan fitur
+harga emas, USD/IDR, GPR, RSI dan volatilitas.
+
+</p>
+
+<div class="trust-bar">
+
+<div class="trust-item">
+<span class="trust-value">{{ '%.2f'|format(backtest_mape) }}%</span>
+<span class="trust-label">MAPE 30 Hari Terakhir</span>
+</div>
+
+<div class="trust-item">
+<span class="trust-value">0.84%</span>
+<span class="trust-label">MAPE H+1 (Test Set)</span>
+</div>
+
+<div class="trust-item">
+<span class="trust-value">0.985</span>
+<span class="trust-label">R&sup2; H+1 (Test Set)</span>
+</div>
+
+</div>
+
+<div class="hero-buttons">
+
+<button class="gold-btn">
+
+<i class="fa-solid fa-chart-line"></i>
+
+Live Forecast
+
+</button>
+
+<button class="outline-btn">
+
+<i class="fa-solid fa-clock-rotate-left"></i>
+
+30 Day Backtest
+
+</button>
+
+</div>
+
+<div class="disclaimer">
+
+<i class="fa-solid fa-triangle-exclamation"></i>
+
+<p>
+
+Prediksi ini dihasilkan dari model statistik berbasis data historis
+dan <b>bukan jaminan</b> pergerakan harga di masa depan. Model bisa saja
+salah, terutama saat ada kejadian mendadak (isu geopolitik, kebijakan
+moneter, sentimen pasar) yang belum tercermin di data. Gunakan sebagai
+referensi tambahan, bukan satu-satunya dasar keputusan finansial.
+
+</p>
+
+</div>
+
+</div>
+
+<div class="hero-right">
+
+<div class="price-card">
+
+<span>Prediksi {{ r1.horizon }}</span>
+
+<h2>{{ r1.price_label }}</h2>
+
+<p>
+
+{{ r1.date_label }}
+
+</p>
+
+<div class="price-change {{ 'up' if r1.change_pct>0 else 'down' }}">
+
+{{ '%+.2f'|format(r1.change_pct) }}%
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+  <!-- GRAFIK -->
+<section class="panel">
+
+<div class="panel-head">
+
+<div>
+
+<h2>Gold Price Forecast</h2>
+
+<p>30 Hari Historis + Prediksi 7 Hari</p>
+
+</div>
+
+<div class="chart-badge">
+
+<i class="fa-solid fa-chart-area"></i>
+
+Forecast
+
+</div>
+
+</div>
+
+<canvas id="goldChart"></canvas>
+
+</section>
+
+  <!-- BACKTEST H+1: 30 HARI TERAKHIR -->
+  <section class="panel">
+    <div class="panel-head backtest-head">
+      <h2>Akurasi Model &mdash; Prediksi vs Aktual, 30 Hari Terakhir</h2>
+      <span class="mape-badge">MAPE {{ '%.2f'|format(backtest_mape) }}%</span>
+    </div>
+    <p class="backtest-note">
+      Grafik ini "memutar ulang" prediksi H+1 setiap hari selama 30 hari terakhir
+      &mdash; seolah model cuma tahu data sampai sehari sebelumnya &mdash; lalu
+      dibandingkan dengan harga aktual yang benar-benar terjadi. Kalau dua garis
+      ini melebar, artinya ada pergerakan harga yang tidak tertangkap fitur model
+      (biasanya karena sentimen pasar mendadak, bukan pola historis).
+    </p>
+    <canvas id="backtestChart" height="90"></canvas>
+  </section>
+
+  <!-- TABEL PREDIKSI 7 HARI -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Rincian Proyeksi 7 Hari</h2>
+    </div>
+    <div class="pred-list">
+      {% for r in results %}
+      <div class="pred-row">
+        <span class="pred-h">{{ r.horizon }}</span>
+        <span class="pred-date">{{ r.date_label }}</span>
+        <span class="pred-price">{{ r.price_label }}</span>
+        <span class="pred-change {{ 'up' if r.change_pct > 0 else 'down' if r.change_pct < 0 else 'flat' }}">
+          {{ '▲' if r.change_pct > 0 else '▼' if r.change_pct < 0 else '—' }}
+          {{ '%+.2f'|format(r.change_pct) }}%
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- INFO MODEL -->
+  <section class="panel info-panel">
+    <div class="panel-head">
+      <h2>Tentang Model</h2>
+    </div>
+    <div class="info-grid">
+      <div><span class="info-k">Arsitektur</span><span class="info-v">LSTM(32) → Dropout(0.3) → Dense(8) → Dense(1)</span></div>
+      <div><span class="info-k">Fitur</span><span class="info-v">GoldReturn, USDReturn, RSI14, PriceMA14Ratio, Vol30, GPRNorm, MonthSin, MonthCos</span></div>
+      <div><span class="info-k">Sliding window</span><span class="info-v">30 hari</span></div>
+      <div><span class="info-k">MAPE (H+1)</span><span class="info-v">0.84%</span></div>
+      <div><span class="info-k">R² (H+1)</span><span class="info-v">0.985</span></div>
+      <div><span class="info-k">Baris data terpakai</span><span class="info-v">{{ n_rows }}</span></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+
+<div>
+
+<b>SyGold</b>
+
+</div>
+
+<div>
+
+Gold Price Forecast using LSTM Multivariate.
+
+</div>
+
+<div>
+
+Made with ❤️ using Flask & TensorFlow
+
+</div>
+
+</footer>
+
+<script src="{{ url_for('static', filename='js/chart.umd.js') }}"></script>
+<script>
+/* =========================
+   DARK / LIGHT MODE
+========================= */
+const btn = document.getElementById("themeToggle");
+
+if (localStorage.getItem("theme") === "light") {
+    document.body.classList.add("light");
+    btn.innerHTML = '<i class="fa-solid fa-sun"></i>';
+}
+
+btn.addEventListener("click", () => {
+    document.body.classList.toggle("light");
+
+    if (document.body.classList.contains("light")) {
+        localStorage.setItem("theme", "light");
+        btn.innerHTML = '<i class="fa-solid fa-sun"></i>';
+    } else {
+        localStorage.setItem("theme", "dark");
+        btn.innerHTML = '<i class="fa-solid fa-moon"></i>';
+    }
+});
+
+
+/* =========================
+   GOLD PARTICLE BACKGROUND
+========================= */
+
+const pCanvas = document.getElementById("bgParticles");
+const pCtx = pCanvas.getContext("2d");
+let particles = [];
+
+function resizeParticleCanvas(){
+    pCanvas.width = window.innerWidth;
+    pCanvas.height = window.innerHeight;
+}
+
+function initParticles(){
+    const count = window.innerWidth < 700 ? 28 : 55;
+    particles = Array.from({ length: count }, () => ({
+        x: Math.random() * pCanvas.width,
+        y: Math.random() * pCanvas.height,
+        r: Math.random() * 2 + 0.6,
+        vx: (Math.random() - 0.5) * 0.15,
+        vy: -Math.random() * 0.25 - 0.05,
+        alpha: Math.random() * 0.5 + 0.15,
+        drift: Math.random() * Math.PI * 2
+    }));
+}
+
+function drawParticles(){
+    pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+
+    const isLight = document.body.classList.contains("light");
+    const baseAlphaMul = isLight ? 0.5 : 1;
+
+    for (const p of particles){
+        p.drift += 0.01;
+        p.x += p.vx + Math.sin(p.drift) * 0.08;
+        p.y += p.vy;
+
+        if (p.y < -10){
+            p.y = pCanvas.height + 10;
+            p.x = Math.random() * pCanvas.width;
+        }
+        if (p.x < -10) p.x = pCanvas.width + 10;
+        if (p.x > pCanvas.width + 10) p.x = -10;
+
+        const glow = pCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 4);
+        glow.addColorStop(0, `rgba(245,200,66,${p.alpha * baseAlphaMul})`);
+        glow.addColorStop(1, "rgba(245,200,66,0)");
+
+        pCtx.fillStyle = glow;
+        pCtx.beginPath();
+        pCtx.arc(p.x, p.y, p.r * 4, 0, Math.PI * 2);
+        pCtx.fill();
+
+        pCtx.fillStyle = `rgba(255,213,79,${Math.min(p.alpha * baseAlphaMul + 0.2, 0.9)})`;
+        pCtx.beginPath();
+        pCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        pCtx.fill();
+    }
+
+    requestAnimationFrame(drawParticles);
+}
+
+resizeParticleCanvas();
+initParticles();
+drawParticles();
+
+window.addEventListener("resize", () => {
+    resizeParticleCanvas();
+    initParticles();
+});
+
+
+/* =========================
+   GOLD CHART
+========================= */
+
+const canvas = document.getElementById("goldChart");
+const chartCtx = canvas.getContext("2d");
+
+// Gradient emas — dihitung ulang tiap render berdasarkan tinggi ASLI
+// area grafik (chartArea), bukan angka piksel tetap. Kalau dipatok
+// tetap (mis. 400px), area di luar itu otomatis transparan begitu
+// tinggi canvas beda dari asumsi.
+function goldGradientFn(context){
+    const { ctx, chartArea } = context.chart;
+    if (!chartArea) return null;
+    const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+    gradient.addColorStop(0, "rgba(245,200,66,0.45)");
+    gradient.addColorStop(0.5, "rgba(245,200,66,0.20)");
+    gradient.addColorStop(1, "rgba(245,200,66,0)");
+    return gradient;
+}
+
+const labels = {{ chart_labels | tojson }};
+const actual = {{ chart_actual | tojson }};
+const pred   = {{ chart_pred | tojson }};
+
+new Chart(canvas,{
+
+    type: "line",
+
+    data: {
+
+        labels: labels,
+
+        datasets: [
+
+            {
+                label: "Historis",
+                data: actual,
+                borderColor: "#f5c842",
+                backgroundColor: goldGradientFn,
+                fill: true,
+                borderWidth: 3,
+                pointRadius: 0,
+                tension: .35
+            },
+
+            {
+                label: "Prediksi",
+                data: pred,
+                borderColor: "#ffd54f",
+                backgroundColor: goldGradientFn,
+                fill: true,
+                borderWidth: 3,
+                borderDash: [6,4],
+                pointRadius: 4,
+                pointBackgroundColor: "#ffd54f",
+                pointBorderWidth: 0,
+                spanGaps: true,
+                tension: .35
+            }
+
+        ]
+
+    },
+
+    options: {
+
+        responsive:true,
+
+        animation:{
+            duration:1800,
+            easing:"easeOutQuart"
+        },
+
+        interaction:{
+            mode:"index",
+            intersect:false
+        },
+
+        elements:{
+            line:{
+                cubicInterpolationMode:"monotone"
+            }
+        },
+
+        plugins:{
+
+            legend:{
+                labels:{
+                    color:"#9ca3af",
+                    font:{
+                        family:"Poppins",
+                        size:13
+                    }
+                }
+            },
+
+            tooltip:{
+
+                backgroundColor:"#1f1f1f",
+
+                titleColor:"#fff",
+
+                bodyColor:"#fff",
+
+                cornerRadius:12,
+
+                displayColors:false,
+
+                callbacks:{
+
+                    label:(item)=>{
+
+                        return "Rp "+Number(item.raw).toLocaleString("id-ID");
+
+                    }
+
+                }
+
+            }
+
+        },
+
+        scales:{
+
+            x:{
+
+                ticks:{
+                    color:"#888",
+                    maxRotation:0,
+                    autoSkip:true,
+                    maxTicksLimit:10
+                },
+
+                grid:{
+                    color:"rgba(255,255,255,.05)"
+                }
+
+            },
+
+            y:{
+
+                ticks:{
+                    color:"#888",
+                    callback:(v)=>"Rp "+(v/1000000).toFixed(2)+"M"
+                },
+
+                grid:{
+                    color:"rgba(255,255,255,.05)"
+                }
+
+            }
+
+        }
+
+    }
+
+});
+
+
+/* =========================
+   BACKTEST CHART
+========================= */
+
+const btCanvas = document.getElementById("backtestChart");
+const btCtx = btCanvas.getContext("2d");
+
+const btLabels = {{ backtest_labels | tojson }};
+const btActual = {{ backtest_actual | tojson }};
+const btPred = {{ backtest_pred | tojson }};
+
+new Chart(btCanvas,{
+
+    type:"line",
+
+    data:{
+
+        labels:btLabels,
+
+        datasets:[
+
+            {
+
+                label:"Aktual",
+
+                data:btActual,
+
+                borderColor:"#e5e5e5",
+
+                backgroundColor:"transparent",
+
+                borderWidth:2,
+
+                pointRadius:2,
+
+                tension:.25
+
+            },
+
+            {
+
+                label:"Prediksi H+1",
+
+                data:btPred,
+
+                borderColor:"#f5c842",
+
+                backgroundColor:goldGradientFn,
+
+                fill:true,
+
+                borderWidth:2,
+
+                borderDash:[6,4],
+
+                pointRadius:2,
+
+                pointBackgroundColor:"#f5c842",
+
+                tension:.25
+
+            }
+
+        ]
+
+    },
+
+    options:{
+
+        responsive:true,
+
+        interaction:{
+            mode:"index",
+            intersect:false
+        },
+
+        plugins:{
+
+            legend:{
+
+                labels:{
+
+                    color:"#9ca3af",
+
+                    font:{
+
+                        family:"Poppins"
+
+                    }
+
+                }
+
+            },
+
+            tooltip:{
+
+                callbacks:{
+
+                    label:(item)=>{
+
+                        return item.dataset.label+" : Rp "+Number(item.raw).toLocaleString("id-ID");
+
+                    }
+
+                }
+
+            }
+
+        },
+
+        scales:{
+
+            x:{
+
+                ticks:{
+
+                    color:"#888",
+
+                    maxRotation:0,
+
+                    autoSkip:true,
+
+                    maxTicksLimit:10
+
+                },
+
+                grid:{
+
+                    color:"rgba(255,255,255,.05)"
+
+                }
+
+            },
+
+            y:{
+
+                ticks:{
+
+                    color:"#888",
+
+                    callback:(v)=>"Rp "+(v/1000000).toFixed(2)+"M"
+
+                },
+
+                grid:{
+
+                    color:"rgba(255,255,255,.05)"
+
+                }
+
+            }
+
+        }
+
+    }
+
+});
+</script>
+</body>
+</html>
