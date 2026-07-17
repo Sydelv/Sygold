@@ -108,7 +108,7 @@ harga emas, USD/IDR, GPR, RSI dan volatilitas.
 
 <div class="hero-buttons">
 
-<button class="gold-btn">
+<button class="gold-btn" id="btnForecast">
 
 <i class="fa-solid fa-chart-line"></i>
 
@@ -116,7 +116,7 @@ Live Forecast
 
 </button>
 
-<button class="outline-btn">
+<button class="outline-btn" id="btnBacktest">
 
 <i class="fa-solid fa-clock-rotate-left"></i>
 
@@ -171,7 +171,7 @@ referensi tambahan, bukan satu-satunya dasar keputusan finansial.
 </section>
 
   <!-- GRAFIK -->
-<section class="panel">
+<section class="panel" id="forecast">
 
 <div class="panel-head">
 
@@ -198,7 +198,7 @@ Forecast
 </section>
 
   <!-- BACKTEST H+1: 30 HARI TERAKHIR -->
-  <section class="panel">
+ <section class="panel" id="backtest">
     <div class="panel-head backtest-head">
       <h2>Akurasi Model &mdash; Prediksi vs Aktual, 30 Hari Terakhir</h2>
       <span class="mape-badge">MAPE {{ '%.2f'|format(backtest_mape) }}%</span>
@@ -685,6 +685,19 @@ new Chart(btCanvas,{
 
     }
 
+});
+  document.getElementById("btnForecast").addEventListener("click", () => {
+    document.getElementById("forecast").scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+});
+
+document.getElementById("btnBacktest").addEventListener("click", () => {
+    document.getElementById("backtest").scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
 });
 </script>
 </body>
