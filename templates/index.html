@@ -699,6 +699,32 @@ document.getElementById("btnBacktest").addEventListener("click", () => {
         block: "start"
     });
 });
+
+
+ function scrollToSection(id){
+
+    const section=document.getElementById(id);
+
+    section.scrollIntoView({
+        behavior:"smooth",
+        block:"start"
+    });
+
+    section.classList.add("highlight");
+
+    setTimeout(()=>{
+        section.classList.remove("highlight");
+    },1200);
+
+}
+
+document.getElementById("btnForecast").onclick=()=>{
+    scrollToSection("forecast");
+};
+
+document.getElementById("btnBacktest").onclick=()=>{
+    scrollToSection("backtest");
+};
 </script>
 </body>
 </html>
